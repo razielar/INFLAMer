@@ -164,7 +164,7 @@ def plot_AUPRC(model: XGBClassifier, X: pd.DataFrame, y: pd.DataFrame, test_size
     no_skill = len(testy[testy==1]) / len(testy)
     # Plot
     sns.set_context("paper", font_scale= 1.8)
-    plt.figure(figsize= (15, 10))
+    plt.figure(figsize= (12, 7))
     plt.plot(lr_recall, lr_precision, lw= 2, label= f"Mean PR AUC= {lr_auc:.2f}")
     plt.plot([0, 1], [no_skill, no_skill], linestyle='--', color= "black", label=f"No skill= {no_skill: .3f}", lw= 2)
     plt.legend(loc= "upper right")

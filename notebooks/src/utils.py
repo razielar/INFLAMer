@@ -9,8 +9,8 @@ import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
 from tqdm import tqdm
-from sklearn.model_selection import RepeatedStratifiedKFold
-from sklearn.metrics import (roc_curve, auc, confusion_matrix)
+from sklearn.model_selection import (RepeatedStratifiedKFold, train_test_split)
+from sklearn.metrics import (roc_curve, auc, confusion_matrix, precision_recall_curve, f1_score)
 from xgboost import XGBClassifier
 
 def print_training_results(scoring_dict:dict, input_model:XGBClassifier, cv_results:dict) -> None:
@@ -107,6 +107,7 @@ def _cm_labels(input_cm: np.ndarray) -> np.ndarray:
 
 def plot_roc_cm(model, cv, X, y) -> None:
     """
+    Function to create a binary confusion matrix using the test-set.
     """
     # CM variables
     final_tp = []
@@ -141,4 +142,30 @@ def plot_roc_cm(model, cv, X, y) -> None:
                 yticklabels= tick_labels)
     plt.xlabel("Predicted label")
     plt.ylabel("True label")
+    plt.tight_layout()
+
+def plot_AUPRC(model: XGBClassifier, X: pd.DataFrame, y: pd.DataFrame, test_size:float=0.2, seed:float=2) -> None:
+    """
+    Plot AUROC (Area Under the Precision-Recall Curve) using the test set.
+    """
+    trainX, testX, trainy, testy = train_test_split(X, 
+                                                    y.values.ravel(), 
+                                                    test_size=test_size, 
+                                                    random_state=seed)
+    model.fit(trainX, trainy)
+    # predict probabilities
+    lr_probs = model.predict_proba(testX)
+    # keep probabilities for the positive outcome only
+    lr_probs = lr_probs[:, 1]
+    # predict class values
+    yhat = model.predict(testX)
+    lr_precision, lr_recall, _ = precision_recall_curve(testy, lr_probs)
+    lr_f1, lr_auc = f1_score(testy, yhat), auc(lr_recall, lr_precision)
+    no_skill = len(testy[testy==1]) / len(testy)
+    # Plot
+    sns.set_context("paper", font_scale= 1.8)
+    plt.figure(figsize= (15, 10))
+    plt.plot(lr_recall, lr_precision, lw= 2, label= f"Mean PR AUC= {lr_auc:.2f}")
+    plt.plot([0, 1], [no_skill, no_skill], linestyle='--', color= "black", label=f"No skill= {no_skill: .3f}", lw= 2)
+    plt.legend(loc= "upper right")
     plt.tight_layout()

@@ -1,3 +1,4 @@
 # Ignore the following files:
 *.csv
 .ipynb_checkpoints/
+*~

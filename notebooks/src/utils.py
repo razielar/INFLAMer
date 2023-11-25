@@ -10,7 +10,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 from sklearn.model_selection import RepeatedStratifiedKFold
-from sklearn.metrics import (roc_curve, auc)
+from sklearn.metrics import (roc_curve, auc, confusion_matrix)
 from xgboost import XGBClassifier
 
 def print_training_results(scoring_dict:dict, input_model:XGBClassifier, cv_results:dict) -> None:
@@ -81,4 +81,64 @@ def plot_AUROC(model:XGBClassifier, cv:RepeatedStratifiedKFold, X: pd.DataFrame,
     plt.xlabel("False positive rate (1- Specificity)")
     plt.ylabel("True positive rate (Sensitivity)")
     plt.legend(loc="lower right")
+    plt.tight_layout()
+
+def _cm_percentage(input_cm: np.ndarray) -> np.ndarray:
+    """
+    Obtain the percetage of:
+        1) TP, FP
+        2) TN, FN
+    """
+    negative_values = np.round(input_cm.flatten()[0:2] / np.sum(input_cm.flatten()[0:2]) * 100, 2)
+    positive_values = np.round(input_cm.flatten()[2:5] / np.sum(input_cm.flatten()[2:5]) * 100, 2)
+    return np.array([negative_values, positive_values]).reshape(2, 2)
+
+def _cm_labels(input_cm: np.ndarray) -> np.ndarray:
+    """
+    Obtain the labes to place them within the Confussion matrix
+    """
+    cm_class = ["TN", "FP", "FN", "TP"]
+    cm_counts = [f"{i:,.0f}" for i in input_cm.flatten()]
+    negative_values = input_cm.flatten()[0:2] / np.sum(input_cm.flatten()[0:2])
+    positive_values = input_cm.flatten()[2:5] / np.sum(input_cm.flatten()[2:5])
+    percentage = [f"{i:.2%}" for i in np.append(negative_values, positive_values)]
+    labels = [f"{v1}\n{v2}\n{v3}" for v1, v2, v3 in zip(cm_counts, percentage, cm_class)]
+    return np.asarray(labels).reshape(2, 2)
+
+def plot_roc_cm(model, cv, X, y) -> None:
+    """
+    """
+    # CM variables
+    final_tp = []
+    final_fp = []
+    final_tn = []
+    final_fn= []
+    for train, test in tqdm(cv.split(X, y.values.ravel())):
+        fit_model = model.fit(X.iloc[train], y.iloc[train].values.ravel())
+        y_pred = fit_model.predict(X.iloc[test])
+        cm = confusion_matrix(y.iloc[test], y_pred)
+        final_tp.append(cm[0][0])
+        final_fp.append(cm[0][1])
+        final_tn.append(cm[1][1])
+        final_fn.append(cm[1][0])
+    # Plot CM
+    final_cm = np.array([np.mean(final_tp), 
+                        np.mean(final_fp), 
+                        np.mean(final_fn), 
+                        np.mean(final_tn)]).reshape(2,2)
+    cm_per = _cm_percentage(input_cm= final_cm)
+    labels = _cm_labels(input_cm= final_cm)
+    # Plot Configs
+    sns.set_context("paper", font_scale=1.8)
+    plt.figure(figsize=(9, 6))
+    tick_labels = ['Not hit', 'Hit']
+    # CM plot
+    sns.heatmap(cm_per, 
+                annot= labels, 
+                fmt= "", 
+                cmap= "Blues", 
+                xticklabels= tick_labels, 
+                yticklabels= tick_labels)
+    plt.xlabel("Predicted label")
+    plt.ylabel("True label")
     plt.tight_layout()

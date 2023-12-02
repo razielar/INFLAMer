@@ -176,6 +176,7 @@ def plot_AUPRC(model: XGBClassifier, X: pd.DataFrame, y: pd.DataFrame, test_size
 def AUROC_model_comparison(models_inputs: List[Dict[str, Union[XGBClassifier, BalancedRandomForestClassifier, LogisticRegression]]], 
                             X: pd.DataFrame,
                             y: pd.DataFrame,
+                            cv: RepeatedStratifiedKFold,
                             verbose: bool=True) -> None:
     """
     Plot AUROC (Area Under the ROC) for each cross-validation split and seed to compare 3 ML models (it can be extended by adding more color_values)
@@ -201,7 +202,7 @@ def AUROC_model_comparison(models_inputs: List[Dict[str, Union[XGBClassifier, Ba
         if verbose:
             model_name = m["label"]
             print(model_name)
-        for train, test in tqdm( stratified_cv.split(X, y.values.ravel()) ):
+        for train, test in tqdm( cv.split(X, y.values.ravel()) ):
             fit_model = model.fit(X.iloc[train], y.iloc[train].values.ravel())
             # ROC curve:
             prediction = fit_model.predict_proba(X.iloc[test])[:,1] #raw probabilities

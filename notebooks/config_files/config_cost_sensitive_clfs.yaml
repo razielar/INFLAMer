@@ -17,9 +17,4 @@ xgboost:
 
 balanced_rf:
   random_state: 0
-
-logistic_regression:
-  random_state: 0
-  solver: 'liblinear'
-  max_iter: 10000
-
+  

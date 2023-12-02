@@ -1,0 +1,10 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+authors:
+- family-names: "Amador"
+  given-names: "Raziel"
+title: "INFLAMer"
+version: 0.1.0
+doi: 10.5281/zenodo.10251592
+date-released: 2023-12-02
+url: "https://doi.org/10.5281/zenodo.10251592"

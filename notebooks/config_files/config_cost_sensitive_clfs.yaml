@@ -1,0 +1,26 @@
+---
+SEED:
+  seed: 0
+
+xgboost:
+  gamma: 1.0
+  learning_rate: 0.05
+  max_depth: 5
+  reg_lambda: 5.0
+  scale_pos_weight: 100
+  tree_method: 'gpu_hist'
+  objective: 'binary:logistic'
+  use_label_encoder: False
+  missing: Null
+  seed: 0
+  eval_metric: 'auc'
+
+balanced_rf:
+  random_state: 0
+
+logistic_regression:
+  C: 1.0
+  penalty: 'l1'
+  class_weight: 'balanced'
+  solver: 'liblinear'
+  max_iter: 10000  

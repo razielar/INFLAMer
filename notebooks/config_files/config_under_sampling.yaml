@@ -1,0 +1,12 @@
+---
+SEED:
+  seed: 0
+
+xgboost:
+  objective: 'binary:logistic'
+  use_label_encoder: False
+  missing: Null
+  eval_metric: 'auc'
+  tree_method: 'gpu_hist'
+  seed: 0
+  

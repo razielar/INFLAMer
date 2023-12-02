@@ -4,6 +4,7 @@
 Author: Raziel Amador Rios
 Version: 0.0.1
 """
+from typing import (List, Dict, Union)
 import pandas as pd
 import numpy as np
 import seaborn as sns
@@ -12,6 +13,8 @@ from tqdm import tqdm
 from sklearn.model_selection import (RepeatedStratifiedKFold, train_test_split)
 from sklearn.metrics import (roc_curve, auc, confusion_matrix, precision_recall_curve, f1_score)
 from xgboost import XGBClassifier
+from imblearn.ensemble import BalancedRandomForestClassifier
+from sklearn.linear_model import LogisticRegression
 
 def print_training_results(scoring_dict:dict, input_model:XGBClassifier, cv_results:dict) -> None:
     """
@@ -169,3 +172,50 @@ def plot_AUPRC(model: XGBClassifier, X: pd.DataFrame, y: pd.DataFrame, test_size
     plt.plot([0, 1], [no_skill, no_skill], linestyle='--', color= "black", label=f"No skill= {no_skill: .3f}", lw= 2)
     plt.legend(loc= "upper right")
     plt.tight_layout()
+
+def AUROC_model_comparison(models_inputs: List[Dict[str, Union[XGBClassifier, BalancedRandomForestClassifier, LogisticRegression]]], 
+                            X: pd.DataFrame,
+                            y: pd.DataFrame,
+                            verbose: bool=True) -> None:
+    """
+    Plot AUROC (Area Under the ROC) for each cross-validation split and seed to compare 3 ML models (it can be extended by adding more color_values)
+    Args:
+        models_inputs: List of dictionaries, each dict the key is the name of the ML model (str), and its value is the ML model.
+        cv: sklearn cross-validation Class
+        X: training and test sets for the numeric and categorical features
+        y: training and test sets for target clf
+    Returns:
+        None
+    """
+    # Plot configs
+    sns.set_context("paper", font_scale= 1.8)
+    plt.figure(figsize= (12, 10))
+    color_values = ["red", "blue", "green"]
+    # Vars
+    mean_fpr = np.linspace(0,1,100)
+    values_auc = []
+    values_tpr= []
+    # Start iteration
+    for m in models_inputs:
+        model = m["model"]
+        if verbose:
+            model_name = m["label"]
+            print(model_name)
+        for train, test in tqdm( stratified_cv.split(X, y.values.ravel()) ):
+            fit_model = model.fit(X.iloc[train], y.iloc[train].values.ravel())
+            # ROC curve:
+            prediction = fit_model.predict_proba(X.iloc[test])[:,1] #raw probabilities
+            [fpr, tpr, t] = roc_curve(y.iloc[test].values.ravel(), prediction)
+            values_tpr.append(np.interp(mean_fpr, fpr, tpr))
+            roc_auc = auc(fpr, tpr)
+            values_auc.append(roc_auc)
+        # Mean AUROC
+        mean_tpr = np.mean(values_tpr, axis=0)
+        mean_auc = auc(mean_fpr, mean_tpr)
+        plt.plot(mean_fpr, mean_tpr, lw= 2, label=f"{model_name}, mean AUROC= {mean_auc: .4f}")
+    # General Plot configs
+    plt.plot([0,1],[0,1],linestyle = '--', lw = 2, color = 'black', alpha=0.7)
+    plt.legend(loc="lower right")
+    plt.xlabel("False positive rate (1 - Specificity)")
+    plt.ylabel("True positive rate (Sensitivity)")
+    plt.show()
